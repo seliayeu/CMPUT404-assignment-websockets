@@ -19,8 +19,29 @@
         WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
         See the License for the specific language governing permissions and
         limitations under the License.
+
+        Modifications to the code licensed under CC BY-SA 4.0 by Danila Seliayeu, 
+        2021 https://creativecommons.org/licenses/by-sa/4.0/
     "/>
     <script src="json2.js"></script>
+    <style>
+      body {
+          margin: 0;
+          width: 100vw;
+          height: 100vh;
+          background-size: 100%;
+          background: rgb(34,193,195);
+          background: radial-gradient(circle, rgba(34,193,195,1) 0%, rgba(253,187,45,1) 100%);
+
+          background-repeat: no-repeat;
+      }
+      #c {
+          margin: auto;
+          width: 100%;
+          height: 100%;
+      }
+
+    </style>
   </head> 
   <body bgcolor="white" height="100%" width="100%"> 
     <div id="debug"></div>
@@ -38,23 +59,27 @@ var socket;
 
 function debug(str) {
     var debugDiv = document.getElementById('debug');
+    debugDiv.style.color = "white";
     debugDiv.innerHTML = "" + str;
 }
 debug("Test");
 
 world = {};
 
-//XXX: TODO Make this prettier!
 function drawCircle(context,entity) {
-    with(context) {
-        beginPath();                
-        lineWidth = 3;
+    with (context) {
+        beginPath();              
+        lineWidth = 2;
         var x = entity["x"];
         var y = entity["y"];
         //moveTo(x,y);
         fillStyle = entity["colour"];
         strokeStyle = fillStyle;
-        arc(x, y, (entity["radius"])?entity["radius"]:50, 0, 2.0 * Math.PI, false);  
+        arc(
+            x, 
+            y, 
+            entity["radius"] ? entity["radius"] : 50, 0, 2.0 * Math.PI, false 
+        );  
         stroke();                                
     }
 }
@@ -71,11 +96,8 @@ function prepEntity(entity) {
 
 function clearFrame() {
     with(context) {
-	moveTo(0,0);
-	fillStyle = "#000";
-	fillRect(0,0,W,H);
+        clearRect(0, 0, W, H);
     }
-
 }
 
 // This actually draws the frame
@@ -124,7 +146,8 @@ function getPosition(e) {
 function addEntity(entity, data) {
     world[entity] = data;
     drawNextFrame(); // (but should we?)
-    //XXX: Send a XHTML Request that updates the entity you just modified!
+    socket.send(JSON.stringify({ [entity]: data }))
+
 }
 var counter = 0;
 function addEntityWithoutName(data) {
@@ -229,19 +252,31 @@ mouse = (function() {
 })();
 
 // Add the application specific mouse listeners!
-//XXX: TODO Make these prettier!
-mouse.mousedowners.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'blue'});
+mouse.mousedowners.push(function(x, y) {
+    addEntityWithoutName({ 
+        x, 
+        y, 
+        'colour':'#fda92d',
+    });
 });
 
-mouse.mouseuppers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'red'});
+mouse.mouseuppers.push(function(x, y) {
+    addEntityWithoutName({
+        x, 
+        y, 
+        'colour':'#2d79fd',
+    });
 });
 
-mouse.mousedraggers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'green',
-                          'radius':10});
+mouse.mousedraggers.push(function(x, y) {
+    addEntityWithoutName({
+        x, 
+        y, 
+        'colour':'snow',
+        'radius': 10,
+    });
 });
+
 
 
 function update() {
@@ -253,7 +288,10 @@ function wsSetup() {
     var url = "ws://"+host+"/subscribe";   
     socket = new WebSocket(url);
     socket.onopen = function() {
-        //XXX: TODO What are you going to do here?
+        fetch("/world")
+            .then( res => res.json() )
+            .then( res => { world = res; console.log(res); } )
+            .then(drawNextFrame());
     };
     socket.onerror = function(msg) {
         debug("WebSocket Error:" + msg.data);
@@ -261,7 +299,9 @@ function wsSetup() {
     socket.onmessage = function(msg) {  
         try {
             debug("WebSocket Recv:" + msg.data);
-            //XXX: TODO What are you going to do here?            
+            const res = JSON.parse(msg.data)
+            Object.keys(res).forEach(entity => { world[entity] = res[entity]})
+            drawNextFrame()
         } catch (e) {
             alert("socket on message: " + e);
         }
