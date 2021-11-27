@@ -94,6 +94,8 @@ myWorld.add_set_listener( set_listener )
 def hello():
     return redirect("/static/index.html") 
 
+# following code taken from https://github.com/abramhindle/WebSocketsExamples/blob/master/chat.py
+# which is written by Abram Hindle and licensed under the Apache License Version 2.0
 def read_ws(ws,client):
     '''A greenlet function that reads from the websocket and updates the world'''
     msg = ws.receive()
@@ -111,6 +113,8 @@ def read_ws(ws,client):
     except Exception as e:
         print(e)
 
+# following code taken from https://github.com/abramhindle/WebSocketsExamples/blob/master/chat.py
+# which is written by Abram Hindle and licensed under the Apache License Version 2.0
 @sockets.route('/subscribe')
 def subscribe_socket(ws):
     '''Fufill the websockjAet URL of /subscribe, every update notify the
